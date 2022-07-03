@@ -81,6 +81,7 @@ GST_START_TEST (baseidlesrc_submit_buffer)
 
   caps = gst_caps_from_string ("foo/bar");
   gst_harness_set_sink_caps (h, caps);
+  gst_base_idle_src_negotiate (base_src);
 
   gst_base_idle_src_submit_buffer (base_src, gst_buffer_new_and_alloc (100));
 

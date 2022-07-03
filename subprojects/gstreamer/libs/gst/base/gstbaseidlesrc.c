@@ -1541,7 +1541,7 @@ gst_base_idle_src_class_init (GstBaseIdleSrcClass * klass)
   if (private_offset != 0)
     g_type_class_adjust_private_offset (klass, &private_offset);
 
-  GST_DEBUG_CATEGORY_INIT (gst_base_idle_src_debug, "src", 0, "src element");
+  GST_DEBUG_CATEGORY_INIT (gst_base_idle_src_debug, "idlesrc", 0, "idlesrc element");
 
   parent_class = g_type_class_peek_parent (klass);
 
