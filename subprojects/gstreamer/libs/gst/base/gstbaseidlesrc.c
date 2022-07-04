@@ -95,7 +95,6 @@ struct _GstBaseIdleSrcPrivate
 
   GQueue *obj_queue;
   GThreadPool *thread_pool;
-  gboolean caps_set;
 };
 
 static GstElementClass *parent_class = NULL;
@@ -320,7 +319,6 @@ gst_base_idle_src_set_caps (GstBaseIdleSrc * src, GstCaps * caps)
     if (res) {
       gst_base_idle_src_queue_object (src,
           (GstMiniObject *) gst_event_new_caps (caps));
-      src->priv->caps_set = TRUE;
     }
   }
 
@@ -1463,7 +1461,6 @@ gst_base_idle_src_submit_buffer (GstBaseIdleSrc * src, GstBuffer * buffer)
   g_return_if_fail (GST_IS_BASE_IDLE_SRC (src));
   g_return_if_fail (GST_IS_BUFFER (buffer));
 
-  g_assert (src->priv->caps_set);
   gst_base_idle_src_check_pending_segment (src);
 
   /* we need it to be writable later in get_range() where we use get_writable */
@@ -1488,7 +1485,6 @@ gst_base_idle_src_submit_buffer_list (GstBaseIdleSrc * src,
   g_return_if_fail (GST_IS_BASE_IDLE_SRC (src));
   g_return_if_fail (GST_IS_BUFFER_LIST (buffer_list));
 
-  g_assert (src->priv->caps_set);
   gst_base_idle_src_check_pending_segment (src);
 
   /* we need it to be writable later in get_range() where we use get_writable */
