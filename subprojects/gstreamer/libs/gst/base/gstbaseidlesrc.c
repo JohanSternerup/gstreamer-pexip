@@ -1367,25 +1367,33 @@ gst_base_idle_src_process_object (GstBaseIdleSrc * src, GstMiniObject * obj)
   if (GST_IS_BUFFER (obj)) {
     GstBuffer *buf = GST_BUFFER_CAST (obj);
     GstFlowReturn ret;
+
+    GST_DEBUG_OBJECT (src, "About to push Buffer %" GST_PTR_FORMAT, buf);
     ret = gst_pad_push (pad, buf);
     if (ret != GST_FLOW_OK)
       GST_ERROR ("HUUUUAA");
   } else if (GST_IS_EVENT (obj)) {
     GstEvent *event = GST_EVENT_CAST (obj);
     gboolean ret;
+
+    GST_DEBUG_OBJECT (src, "About to push Event %" GST_PTR_FORMAT, event);
     ret = gst_pad_push_event (pad, event);
     if (!ret)
       GST_ERROR ("HUUUUAA");
+  } else if (GST_IS_CAPS (obj)) {
+    GST_DEBUG_OBJECT (src, "About to push Caps %" GST_PTR_FORMAT, obj);
   }
 
   GST_PAD_STREAM_UNLOCK (pad);
 }
 
 static void
-gst_base_idle_src_func (G_GNUC_UNUSED gpointer data, gpointer user_data)
+gst_base_idle_src_func (gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-  GstBaseIdleSrc *src = GST_BASE_IDLE_SRC (user_data);
+  GstBaseIdleSrc *src = GST_BASE_IDLE_SRC (data);
   GstMiniObject *obj;
+
+  GST_ERROR_OBJECT (src, "Start to process");
 
   GST_PAD_STREAM_LOCK (src->srcpad);
   if (gst_pad_check_reconfigure (src->srcpad)) {
@@ -1411,21 +1419,36 @@ gst_base_idle_src_func (G_GNUC_UNUSED gpointer data, gpointer user_data)
 static GThreadPool *
 gst_base_idle_src_get_thread_pool (GstBaseIdleSrc * src)
 {
+  GThreadPool *thread_pool;
+  GError * err;
+  gint max_threads;
+
   if (src->priv->thread_pool)
     return src->priv->thread_pool;
 
-  src->priv->thread_pool = g_thread_pool_new (gst_base_idle_src_func,
-      src, 0, FALSE, NULL);
-  return src->priv->thread_pool;
+  thread_pool = g_thread_pool_new (gst_base_idle_src_func, NULL, 0, FALSE, NULL);
+  src->priv->thread_pool = thread_pool;
+
+  // max_threads = 2;
+  // if (!g_thread_pool_set_max_threads (thread_pool, max_threads, &err)) {
+  //   GST_ERROR_OBJECT (src, "Unable to set max-threads to %d Error: %s",
+  //       max_threads, err->message);
+  //   g_assert_not_reached ();
+  // }
+
+  GST_DEBUG_OBJECT (src, "Created new thread pool %p max-threads %d ",
+      thread_pool, g_thread_pool_get_max_threads (thread_pool));
+
+  return thread_pool;
 }
 
 static void
 gst_base_idle_src_start_task (GstBaseIdleSrc * src)
 {
-  GThreadPool *pool = gst_base_idle_src_get_thread_pool (src);
+  GThreadPool *thread_pool = gst_base_idle_src_get_thread_pool (src);
 
   GError *err = NULL;
-  if (!g_thread_pool_push (pool, NULL, &err)) {
+  if (!g_thread_pool_push (thread_pool, src, &err)) {
     GST_ERROR_OBJECT (src, "Could not push to thread pool. Error: %s",
         err->message);
     g_assert_not_reached ();
@@ -1605,6 +1628,9 @@ gst_base_idle_src_init (GstBaseIdleSrc * src, gpointer g_class)
   gst_base_idle_src_add_stream_start (src);
 
   GST_DEBUG_OBJECT (src, "init done");
+
+  // src->priv->thread_pool = g_thread_pool_new (gst_base_idle_src_func,
+  //     NULL, 0, FALSE, NULL);
 }
 
 GType
