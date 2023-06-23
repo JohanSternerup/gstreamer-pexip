@@ -3141,7 +3141,7 @@ free_mbuf:
 #endif
 
 void
-usrsctp_register_address(void *addr)
+usrsctp_register_address_full(void *addr, void (*destroy)(void *))
 {
 	struct sockaddr_conn sconn;
 
@@ -3152,7 +3152,7 @@ usrsctp_register_address(void *addr)
 #endif
 	sconn.sconn_port = 0;
 	sconn.sconn_addr = addr;
-	sctp_add_addr_to_vrf(SCTP_DEFAULT_VRFID,
+	sctp_add_addr_to_vrf_full(SCTP_DEFAULT_VRFID,
 	                     NULL,
 	                     0xffffffff,
 	                     0,
@@ -3160,7 +3160,14 @@ usrsctp_register_address(void *addr)
 	                     NULL,
 	                     (struct sockaddr *)&sconn,
 	                     0,
-	                     0);
+	                     0,
+	                     destroy);
+}
+
+void
+usrsctp_register_address(void *addr)
+{
+	usrsctp_register_address_full (addr, NULL);
 }
 
 void
